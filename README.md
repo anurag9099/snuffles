@@ -1,8 +1,8 @@
-# snuffles
+<img width="432" height="671" alt="image" src="https://github.com/user-attachments/assets/26ba5b08-853e-4bd8-b374-1acd3129d541" /># snuffles
 
 <div align="center">
 
-<img src="https://www.vhv.rs/viewpic/iRwJmoT_snuffles-snowball-rickandmorty-freetoedit-hd-png-download/#" alt="Snuffles" width="300"/>
+<img src="https://static.wikia.nocookie.net/animated-dogs/images/2/23/49-494035_snuffles-snowball-rickandmorty-freetoedit-snowball-rick-and-morty.png/revision/latest?cb=20210408002317" alt="Snuffles" width="300"/>
 
 *"Where are my testicles, Summer?"*
 
