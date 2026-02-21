@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<img src="https://static.wikia.nocookie.net/rickandmorty/images/4/4b/Snowball_with_mech_suit.png" alt="Snuffles" width="300"/>
+<img src="https://static.wikia.nocookie.net/rickandmorty/images/7/70/Snuffles-helmet.jpg/revision/latest?cb=20131212193614" alt="Snuffles" width="300"/>
 
 *"Where are my testicles, Summer?"*
 
