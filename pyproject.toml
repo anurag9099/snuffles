@@ -1,0 +1,10 @@
+[project]
+name = "snuffles"
+version = "0.1.0"
+description = "The simplest multi-agent system. ~500 lines of core Python. Named after Snuffles from Rick and Morty — a simple dog that became superintelligent with the right helmet."
+requires-python = ">=3.11"
+dependencies = ["httpx"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.backends"
