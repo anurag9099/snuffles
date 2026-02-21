@@ -25,7 +25,7 @@ class Agent:
     name: str
     instructions: str
     tools: list[Tool] = field(default_factory=list)
-    model: str = "gpt-4o-mini"
+    model: str = "global.anthropic.claude-opus-4-6-v1"
     max_iterations: int = 10
 
     def tool_schemas(self) -> list[dict]:
