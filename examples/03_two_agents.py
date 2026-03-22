@@ -15,7 +15,9 @@ async def write_document(title: str, content: str) -> str:
 researcher = Agent(
     name="researcher",
     instructions="""You research topics using web_search.
-    When done, send your findings to the 'writer' agent.""",
+    When you are ready for the writer, reply with a JSON object like:
+    {"to": "writer", "content": "your concise research handoff"}
+    Return only the JSON object.""",
     tools=[
         Tool(
             name="web_search",
@@ -33,7 +35,10 @@ researcher = Agent(
 writer = Agent(
     name="writer",
     instructions="""You write documents from research findings.
-    Use write_document to save the final output.""",
+    Use write_document to save the final output.
+    When you are done, reply with a JSON object like:
+    {"to": "user", "content": "your final answer"}
+    Return only the JSON object.""",
     tools=[
         Tool(
             name="write_document",
@@ -58,10 +63,20 @@ async def main():
     orch = Orchestrator(bus, log)
     orch.add_agent(researcher)
     orch.add_agent(writer)
-    await bus.send(
-        Message(sender="user", to="researcher", content="Research Tokyo's economy")
-    )
-    await orch.run()
+    run_task = asyncio.create_task(orch.run())
+
+    try:
+        await bus.send(
+            Message(sender="user", to="researcher", content="Research Tokyo's economy")
+        )
+        while True:
+            reply = await bus.next_reply()
+            print(f"{reply.sender} -> {reply.to}: {reply.content}")
+            if reply.to == "user":
+                break
+    finally:
+        orch.stop()
+        await run_task
 
 
 asyncio.run(main())

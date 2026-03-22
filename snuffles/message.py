@@ -28,8 +28,7 @@ class Event:
       tool_call        - Agent is executing a tool
       tool_result      - Tool returned a result
       loop_end         - Agent finished processing
-      loop_max_iters   - Agent hit iteration limit
-      trigger_fired    - A timer/file trigger activated
+      loop_max_iterations - Agent hit iteration limit
     """
 
     kind: str

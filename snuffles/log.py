@@ -1,7 +1,7 @@
-"""Append-only JSONL event log. The ENTIRE observability story.
+"""Append-only JSONL event log.
 
-No metrics server, no tracing framework. A file you can read with
-cat, grep, and jq.
+No metrics server, no tracing framework. Just a file you can inspect
+with cat, grep, and jq.
 """
 
 import json

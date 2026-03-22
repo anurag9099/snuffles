@@ -12,6 +12,35 @@ from snuffles.llm import chat_completion
 from snuffles.log import EventLog
 
 
+def _final_message(
+    agent: Agent,
+    trigger_message: Message,
+    content: str | None,
+) -> Message:
+    """Build the final outbound message from the model response.
+
+    If the model returns a JSON object with string `to` and `content` fields,
+    treat it as an explicit routing envelope. Otherwise, fall back to the
+    original requester.
+    """
+
+    if content is None:
+        return Message(sender=agent.name, to=trigger_message.sender, content="")
+
+    try:
+        payload = json.loads(content)
+    except json.JSONDecodeError:
+        payload = None
+
+    if isinstance(payload, dict):
+        to = payload.get("to")
+        routed_content = payload.get("content")
+        if isinstance(to, str) and isinstance(routed_content, str):
+            return Message(sender=agent.name, to=to, content=routed_content)
+
+    return Message(sender=agent.name, to=trigger_message.sender, content=content)
+
+
 async def run_loop(
     agent: Agent,
     trigger_message: Message,
@@ -61,11 +90,22 @@ async def run_loop(
                     data={"content": (response.content or "")[:500]},
                 )
             )
-            return Message(
-                sender=agent.name,
-                to=trigger_message.sender,
-                content=response.content or "",
+            final_message = _final_message(
+                agent=agent,
+                trigger_message=trigger_message,
+                content=response.content,
             )
+            event_log.record(
+                Event(
+                    kind="loop_end",
+                    agent=agent.name,
+                    data={
+                        "to": final_message.to,
+                        "content": final_message.content[:500],
+                    },
+                )
+            )
+            return final_message
 
         # ACT: Execute each tool call
         messages.append(response.to_message_dict())

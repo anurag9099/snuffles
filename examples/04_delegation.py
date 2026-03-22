@@ -16,14 +16,19 @@ async def calculate(expression: str) -> str:
 
 manager = Agent(
     name="manager",
-    instructions="""You are a manager. When asked complex questions,
-    delegate calculation tasks to the 'calculator' agent by addressing
-    your response to them.""",
+    instructions="""You are a manager.
+    If the user asks a math question, send only the arithmetic expression
+    to the 'calculator' agent with a JSON object like:
+    {"to": "calculator", "content": "42 * 17 + 256"}
+    If you receive a calculation result, respond to the user with a JSON object like:
+    {"to": "user", "content": "42 * 17 + 256 = 970"}
+    Return only the JSON object.""",
 )
 
 calculator = Agent(
     name="calculator",
-    instructions="You perform calculations. Use the calculate tool.",
+    instructions="""You perform calculations. Use the calculate tool.
+    Reply with plain text only, for example: 970""",
     tools=[
         Tool(
             name="calculate",
@@ -45,12 +50,22 @@ async def main():
     orch = Orchestrator(bus, log)
     orch.add_agent(manager)
     orch.add_agent(calculator)
-    await bus.send(
-        Message(
-            sender="user", to="manager", content="What is 42 * 17 + 256?"
+    run_task = asyncio.create_task(orch.run())
+
+    try:
+        await bus.send(
+            Message(
+                sender="user", to="manager", content="What is 42 * 17 + 256?"
+            )
         )
-    )
-    await orch.run()
+        while True:
+            reply = await bus.next_reply()
+            print(f"{reply.sender} -> {reply.to}: {reply.content}")
+            if reply.to == "user":
+                break
+    finally:
+        orch.stop()
+        await run_task
 
 
 asyncio.run(main())

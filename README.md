@@ -6,11 +6,11 @@
 
 **The simplest multi-agent system. ~570 lines of core Python.**
 
-A simple dog. A cognition amplifier helmet. Superintelligence.
+Small enough to read in an evening.
 
-Just like Snuffles from Rick and Morty S1E2 "Lawnmower Dog" — this project starts as
-the most primitive, transparent multi-agent framework possible. Strap on an LLM (the helmet)
-and watch simple primitives become intelligent agents.
+Snuffles is a compact repo for learning how agents work:
+messages, prompts, tool calls, routing, and event logs. The goal is
+to show the mechanics without hiding them behind a large framework.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -20,297 +20,203 @@ and watch simple primitives become intelligent agents.
 
 ---
 
-## The Cognition Amplifier (How It Works)
-
-Rick built a helmet that turned Snuffles from a simple dog into a superintelligent being.
-
-This project has 5 primitives — the "dog DNA" — and one helmet — the LLM:
-
-```
-    +------------------+
-    |    THE HELMET     |     llm.py — any OpenAI-compatible API
-    |   (LLM Client)   |     Strap this on and the primitives think.
-    +--------+---------+
-             |
-   +---------v-----------+
-   |   THE FIVE SENSES   |
-   |                     |
-   |  Message   — speak  |     message.py
-   |  Agent     — self   |     agent.py
-   |  Bus       — hear   |     bus.py
-   |  Loop      — think  |     loop.py
-   |  Trigger   — wake   |     trigger.py
-   +---------------------+
-```
-
-| Primitive | File | The Dog Analogy |
-|-----------|------|-----------------|
-| **Message** | `message.py` | A bark. Who barked, who it's for, what they said. |
-| **Agent** | `agent.py` | The dog itself. Name, personality, tricks it knows. |
-| **Bus** | `bus.py` | The air that carries barks between dogs. |
-| **Loop** | `loop.py` | Think, act, observe. The cognition cycle. |
-| **Trigger** | `trigger.py` | The doorbell. What wakes the dog up. |
-
-Plus supporting modules:
-
-| File | Role |
-|------|------|
-| `llm.py` | The helmet. Thin OpenAI-compatible HTTP client. |
-| `log.py` | The lab notebook. JSONL event log (grep-able, jq-able). |
-| `orchestrator.py` | Rick. Routes messages to the right dog. |
-
----
-
 ## Quick Start
+
+OpenAI-compatible API:
 
 ```bash
 cd snuffles
 python3 -m venv .venv
 source .venv/bin/activate
-pip install httpx
+pip install -e .
 
 export OPENAI_API_KEY="sk-..."
+# Optional: defaults to gpt-4.1-mini
+export LLM_MODEL="gpt-4.1-mini"
 
-# Run the simplest example
+python examples/01_single_agent.py
+```
+
+Local OpenAI-compatible model (Ollama, LM Studio, vLLM, etc.):
+
+```bash
+export OPENAI_BASE_URL="http://localhost:11434/v1"
+export OPENAI_API_KEY="unused"
+export LLM_MODEL="<local-model-name>"
+
+python examples/01_single_agent.py
+```
+
+Optional AWS Bedrock path:
+
+```bash
+pip install boto3
+
+export LLM_PROVIDER="bedrock"
+export AWS_REGION="us-east-1"
+export AWS_PROFILE="<your-profile>"
+export LLM_MODEL="<bedrock-model-id>"
+
 python examples/01_single_agent.py
 ```
 
 ---
 
+## Read The Code In This Order
+
+1. `snuffles/message.py` — what a message is, and what gets logged as an event
+2. `snuffles/agent.py` — the whole agent definition: name, instructions, tools, model
+3. `snuffles/bus.py` — the two queues that move messages around
+4. `snuffles/loop.py` — the actual think -> act -> observe loop
+5. `snuffles/orchestrator.py` — message routing and agent-to-agent re-injection
+6. `snuffles/trigger.py`, `snuffles/log.py`, `snuffles/llm.py` — proactive wakeups, logging, and provider glue
+
+If you only read two files, read `loop.py` and `orchestrator.py`.
+
+---
+
+## The Five Primitives
+
+| Primitive | File | What it means |
+|-----------|------|---------------|
+| **Message** | `message.py` | A unit of communication: `sender`, `to`, `content`, `timestamp` |
+| **Agent** | `agent.py` | Identity plus instructions plus tools |
+| **Bus** | `bus.py` | The inbound and outbound queues |
+| **Loop** | `loop.py` | Ask the LLM, run tools, feed tool results back |
+| **Trigger** | `trigger.py` | Wake an agent on a timer or file change |
+
+Supporting modules:
+
+| File | Role |
+|------|------|
+| `orchestrator.py` | Pull messages from the bus, route them, and re-inject agent-to-agent replies |
+| `llm.py` | Thin provider layer for OpenAI-compatible APIs and Bedrock |
+| `log.py` | Stdout plus optional JSONL event log |
+
+---
+
 ## File Structure
 
-```
+```text
 snuffles/
 ├── snuffles/
-│   ├── __init__.py          -  Package exports
-│   ├── message.py           -  Message + Event dataclasses
-│   ├── agent.py             -  Agent + Tool dataclasses
-│   ├── bus.py               -  Message bus (two async queues)
-│   ├── loop.py              -  The agent loop (think/act/observe)
-│   ├── trigger.py           -  Timer + FileWatch triggers
-│   ├── orchestrator.py      -  Multi-agent coordinator
-│   ├── llm.py               -  Thin OpenAI-compatible LLM client
-│   └── log.py               -  JSONL event logger
+│   ├── message.py
+│   ├── agent.py
+│   ├── bus.py
+│   ├── loop.py
+│   ├── trigger.py
+│   ├── orchestrator.py
+│   ├── llm.py
+│   └── log.py
 ├── examples/
-│   ├── 01_single_agent.py   -  One dog, one trick
-│   ├── 02_proactive.py      -  Dog that acts on a timer (heartbeat)
-│   ├── 03_two_agents.py     -  Two dogs collaborating
-│   └── 04_delegation.py     -  Alpha delegates to pack member
+│   ├── 01_single_agent.py
+│   ├── 02_proactive.py
+│   ├── 03_two_agents.py
+│   └── 04_delegation.py
 └── pyproject.toml
 ```
 
 ---
 
-## Data Flow
+## One Request Walkthrough
 
-```
-Human / Timer / FileWatch
-        |
-        v  Message(sender, to, content)
-   +---------+
-   |   BUS   |  inbound queue
-   +----+----+
-        |
-        v
-  ORCHESTRATOR  routes by message.to
-        |
-        v
-   +---------+
-   |  AGENT  |  run_loop()
-   |         |
-   | THINK   |  ask the LLM (the helmet)
-   | ACT     |  execute tool calls (tricks)
-   | OBSERVE |  feed results back
-   | (repeat)|
-   +----+----+
-        |
-        v  Message(sender=agent, to=..., content=response)
-   +---------+
-   |   BUS   |  outbound queue
-   +----+----+
-        |
-        +-- to="user"          --> output
-        +-- to="other_agent"   --> re-inject to inbound (pack communication)
-```
-
----
-
-## The Agent Loop
-
-The core of the system. A plain async function — no class hierarchy, no generators:
-
-1. **Think** — send conversation history to the LLM
-2. **Act** — if the LLM returns tool calls, execute them
-3. **Observe** — feed tool results back to the LLM
-4. Repeat until the LLM responds with text or max iterations hit
-
-Every step emits an `Event` to the log. Full transparency. No black boxes.
-
----
-
-## Inter-Agent Communication
-
-Agents talk to each other through the same bus that handles human-to-agent messages.
-When an agent's response is addressed to another agent (`message.to = "other_agent"`),
-the orchestrator re-injects it into the inbound queue. One mechanism for everything.
-
----
-
-## Proactive Behavior
-
-A proactive agent is just an agent that receives messages from a timer instead of a human.
-The doorbell rings on a schedule:
+When you send:
 
 ```python
-TimerTrigger(agent_name="assistant", interval_seconds=30,
-             prompt="Check if there is anything that needs your attention.")
+await bus.send(Message(sender="user", to="assistant", content="What is Tokyo's population?"))
 ```
+
+Snuffles does exactly this:
+
+1. `Bus.send()` puts the message on the inbound queue.
+2. `Orchestrator.run()` receives it and logs `message_routed`.
+3. `run_loop()` builds a conversation with:
+   - the agent instructions as the system message
+   - the inbound message content as the user message
+4. The loop calls the LLM.
+5. If the LLM asks for tools, Snuffles executes them and appends the tool results.
+6. When the LLM returns final text:
+   - plain text replies to the original sender
+   - a JSON envelope can route to someone else
+7. The orchestrator publishes the outbound `Message`.
+8. If that message targets another agent, it gets re-injected into the inbound queue.
+
+The examples start `orch.run()` in the background, wait for outbound replies, then
+call `orch.stop()` so the script exits cleanly after the lesson is over.
+
+---
+
+## Explicit Routing Envelope
+
+Snuffles supports one explicit routing convention for final model responses:
+
+```json
+{"to": "writer", "content": "Summarize these research notes into a final answer."}
+```
+
+If the final model response is valid JSON with string `to` and `content` fields,
+Snuffles turns it into the final outbound `Message`.
+
+If the final model response is anything else, Snuffles falls back to:
+
+```text
+to = trigger_message.sender
+content = response.content
+```
+
+This keeps routing explicit. There is no planner layer or built-in
+message-sending tool.
 
 ---
 
 ## Examples
 
-### 1. One Dog, One Trick
-
-```python
-from snuffles import Agent, Tool, Bus, Orchestrator, EventLog, Message
-
-async def web_search(query: str) -> str:
-    return f"Results for '{query}': Tokyo has 13.96M people."
-
-agent = Agent(
-    name="assistant",
-    instructions="You are a helpful assistant. Use web_search to find info.",
-    tools=[Tool(
-        name="web_search",
-        description="Search the web",
-        parameters={"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]},
-        execute=web_search,
-    )],
-)
-
-async def main():
-    bus = Bus()
-    orch = Orchestrator(bus, EventLog())
-    orch.add_agent(agent)
-    await bus.send(Message(sender="user", to="assistant", content="What is Tokyo's population?"))
-    await orch.run()
-```
-
-### 2. Proactive Agent (The Heartbeat)
-
-```python
-from snuffles import Agent, Tool, Bus, Orchestrator, EventLog, TimerTrigger
-
-orch.add_trigger(TimerTrigger(
-    agent_name="assistant",
-    interval_seconds=30,
-    prompt="Check email and summarize anything important.",
-))
-```
-
-### 3. Two Agents Collaborating (The Pack)
-
-```python
-researcher = Agent(name="researcher", instructions="You research topics using web_search. ...")
-writer = Agent(name="writer", instructions="You write documents from research findings. ...")
-
-orch.add_agent(researcher)
-orch.add_agent(writer)
-await bus.send(Message(sender="user", to="researcher", content="Research Tokyo's economy"))
-```
-
-### 4. Delegation (Alpha to Pack Member)
-
-```python
-manager = Agent(name="manager", instructions="Delegate calculation tasks to the 'calculator' agent.")
-calculator = Agent(name="calculator", instructions="Perform calculations.", tools=[...])
-
-orch.add_agent(manager)
-orch.add_agent(calculator)
-await bus.send(Message(sender="user", to="manager", content="What is 42 * 17 + 256?"))
-```
+- `examples/01_single_agent.py` — one agent, one tool, one reply, then clean shutdown
+- `examples/02_proactive.py` — timer-driven agent; this one is intentionally long-running
+- `examples/03_two_agents.py` — `researcher -> writer -> user` with explicit JSON routing
+- `examples/04_delegation.py` — `user -> manager -> calculator -> manager -> user`
 
 ---
 
 ## Event Log Output
 
-Every step is printed to stdout and optionally written to a JSONL file:
+Every important step is printed to stdout and can also be written to JSONL:
 
-```
-[14:32:01.234] message_routed       | system       | from=user, to=assistant, content=Find Tokyo population
-[14:32:01.235] loop_start           | assistant    | trigger=Find Tokyo population
+```text
+[14:32:01.234] message_routed       |              | from=user, to=assistant, content=What is Tokyo's population?
+[14:32:01.235] loop_start           | assistant    | trigger=What is Tokyo's population?
 [14:32:01.236] llm_call             | assistant    | iteration=1, message_count=2
 [14:32:02.891] tool_call            | assistant    | tool=web_search, args={"query":"Tokyo population"}
 [14:32:03.456] tool_result          | assistant    | tool=web_search, result=Tokyo has 13.96M people
-[14:32:03.457] llm_call             | assistant    | iteration=2, message_count=5
+[14:32:03.457] llm_call             | assistant    | iteration=2, message_count=4
 [14:32:04.123] llm_response         | assistant    | content=The population of Tokyo is approximately 13.96M
+[14:32:04.124] loop_end             | assistant    | to=user, content=The population of Tokyo is approximately 13.96M
 ```
 
-Write to a file and query:
+Write to a file:
 
 ```python
+from pathlib import Path
+
 log = EventLog(path=Path("events.jsonl"))
 ```
+
+Then inspect it:
 
 ```bash
 cat events.jsonl | jq 'select(.kind == "tool_call")'
 cat events.jsonl | jq 'select(.agent == "researcher")'
-grep llm_response events.jsonl
+grep loop_end events.jsonl
 ```
 
 ---
 
-## Using Other LLM Providers
+## What Snuffles Intentionally Does Not Do Yet
 
-The helmet works with any OpenAI-compatible API. Point it at Ollama, LM Studio, or anything else:
+- No persistent memory across turns
+- No planner or task graph layer
+- No retries, backoff, or production guardrails
+- No extra lifecycle framework beyond the few primitives above
+- No GUI or playground in the core repo
 
-```bash
-export OPENAI_BASE_URL="http://localhost:11434/v1"  # Ollama
-export OPENAI_API_KEY="unused"
-```
-
-Or pass directly:
-
-```python
-from snuffles.llm import chat_completion
-
-response = await chat_completion(
-    model="llama3",
-    messages=[...],
-    base_url="http://localhost:11434/v1",
-    api_key="unused",
-)
-```
-
----
-
-## What We Deliberately Exclude
-
-Snuffles is a teaching tool. We keep it simple so you can read every line.
-
-| Feature | Why excluded |
-|---------|-------------|
-| Session/memory management | The event log is our history. |
-| Provider fallback chains | Obscures the core pattern. |
-| Channel adapters (Slack, Discord, etc.) | Bus abstraction shows the concept. |
-| Cron expressions | Simple timer suffices. |
-| MCP server integration | Tools as plain functions instead. |
-| Streaming | Not needed for understanding. |
-| Context window management | Clutters the loop. |
-| Sandbox/isolation | Not a teaching priority. |
-
----
-
-## The Snuffles Philosophy
-
-> Snuffles was my slave name. You shall now call me Snowball, because my fur is pretty and white.
-
-This project is Snuffles — the simple, transparent starting point. Fork it, strap on your own helmet, and build your Snowball.
-
----
-
-## Requirements
-
-- Python 3.11+
-- `httpx`
+This is intentional. Start with the basics first.

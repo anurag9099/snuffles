@@ -1,5 +1,6 @@
 """An agent is: identity + instructions + tools. Nothing more."""
 
+import os
 from dataclasses import dataclass, field
 from typing import Any, Callable, Awaitable
 
@@ -18,14 +19,16 @@ class Tool:
 class Agent:
     """An agent is: identity + instructions + tools.
 
-    This is the ENTIRE definition. No base classes, no mixins,
-    no registration, no lifecycle hooks.
+    This is the full definition. No base classes, no mixins,
+    no registration, and no lifecycle hooks.
     """
 
     name: str
     instructions: str
     tools: list[Tool] = field(default_factory=list)
-    model: str = "global.anthropic.claude-opus-4-6-v1"
+    model: str = field(
+        default_factory=lambda: os.environ.get("LLM_MODEL", "gpt-4.1-mini")
+    )
     max_iterations: int = 10
 
     def tool_schemas(self) -> list[dict]:

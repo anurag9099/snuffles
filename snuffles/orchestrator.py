@@ -21,6 +21,7 @@ class Orchestrator:
         self.agents: dict[str, Agent] = {}
         self._triggers: list = []
         self._running = False
+        self._run_task: asyncio.Task[None] | None = None
 
     def add_agent(self, agent: Agent) -> None:
         self.agents[agent.name] = agent
@@ -30,6 +31,7 @@ class Orchestrator:
 
     async def run(self) -> None:
         self._running = True
+        self._run_task = asyncio.current_task()
 
         # Start triggers as background tasks
         trigger_tasks = [
@@ -65,19 +67,24 @@ class Orchestrator:
                 if response:
                     await self.bus.reply(response)
 
-                    # KEY: If response is addressed to another agent, forward it
-                    # This is how agents talk to each other
-                    if (
-                        response.to in self.agents
-                        and response.to != message.sender
-                    ):
+                    # Re-inject any agent-to-agent reply through the same bus.
+                    if response.to in self.agents and response.to != response.sender:
                         await self.bus.send(response)
+        except asyncio.CancelledError:
+            if self._running:
+                raise
 
         finally:
+            self._running = False
+            self._run_task = None
             for t in self._triggers:
                 t.stop()
             for task in trigger_tasks:
                 task.cancel()
+            if trigger_tasks:
+                await asyncio.gather(*trigger_tasks, return_exceptions=True)
 
     def stop(self) -> None:
         self._running = False
+        if self._run_task and not self._run_task.done():
+            self._run_task.cancel()

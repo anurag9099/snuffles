@@ -31,10 +31,17 @@ async def main():
     log = EventLog()
     orch = Orchestrator(bus, log)
     orch.add_agent(agent)
-    await bus.send(
-        Message(sender="user", to="assistant", content="What is Tokyo's population?")
-    )
-    await orch.run()
+    run_task = asyncio.create_task(orch.run())
+
+    try:
+        await bus.send(
+            Message(sender="user", to="assistant", content="What is Tokyo's population?")
+        )
+        reply = await bus.next_reply()
+        print(f"\n{reply.sender} -> {reply.to}: {reply.content}")
+    finally:
+        orch.stop()
+        await run_task
 
 
 asyncio.run(main())
