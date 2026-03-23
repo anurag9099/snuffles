@@ -20,6 +20,22 @@ to show the mechanics without hiding them behind a large framework.
 
 ---
 
+## Why Snuffles?
+
+The name comes from *Rick and Morty*. Snuffles starts out as an ordinary dog,
+then becomes self-aware after Rick gives him an intelligence helmet.
+That extra layer turns Snuffles into Snowball. In this repo, the LLM plays the
+same role: a thin intelligence layer on top of a few simple parts.
+
+That is the idea behind this repo: start with a few small, readable parts,
+add an LLM, and watch them turn into agent behavior. There is no big
+framework here on purpose.
+
+Snuffles is not trying to be a production platform. It is a small scaffold for
+understanding how an agent system works without reading a large codebase first.
+
+---
+
 ## Quick Start
 
 OpenAI-compatible API:
